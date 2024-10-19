@@ -3,68 +3,112 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>贪吃蛇游戏</title>
     <style>
         body {
             margin: 0;
-            overflow: hidden;
+            padding: 0;
+            height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            background-color: #000;
-            color: #fff;
             font-family: Arial, sans-serif;
-            flex-direction: column;
-            position: relative;
+            background-image: url('1000153468.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
         }
 
-        #loginForm {
+        #loginForm, #registerForm, #difficultySelect {
             display: flex;
             flex-direction: column;
             align-items: center;
-            background-color: rgba(255, 255, 255, 0.1);
-            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 30px;
             border-radius: 10px;
-            margin-bottom: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            margin-bottom: 10px;
         }
 
         input {
             margin: 10px 0;
             padding: 10px;
-            border: none;
+            border: 1px solid #ccc;
             border-radius: 5px;
-            width: 200px;
-            text-align: center;
+            width: 250px;
+            font-size: 16px;
         }
 
         button {
+            margin-top: 15px;
             padding: 10px 20px;
-            background-color: #fff;
-            color: #000;
+            background-color: #4CAF50;
+            color: white;
             border: none;
-            cursor: pointer;
             border-radius: 5px;
-            margin-top: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            position: relative;
+            top: 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        button:active {
+            top: 2px;
+            box-shadow: 0 0 2px rgba(0,0,0,0.2);
+        }
+
+        #backToDifficulty, #backToLogin {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            position: relative;
+            top: 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        #backToDifficulty:hover, #backToLogin:hover {
+            background-color: #d32f2f;
+        }
+
+        #backToDifficulty:active, #backToLogin:active {
+            top: 2px;
+            box-shadow: 0 0 2px rgba(0,0,0,0.2);
         }
 
         #gameContainer {
             display: none;
             flex-direction: column;
             align-items: center;
+            width: 100%;
+            height: 100vh;
+            background-color: #000;
+            overflow: hidden;
         }
 
         canvas {
             background-image: url('cb5b12ac657b5ba70fcda742b507c5861d30bce1625c650d184.webp');
             background-size: cover;
             display: block;
-            border: 1px solid #fff;
         }
 
-        #score {
+        #score, #leaderboard {
             margin-bottom: 10px;
-            font-size: 24px;
+            font-size: 18px;
+            color: #fff;
+            text-align: center;
         }
 
         #restart {
@@ -75,6 +119,15 @@
             border: none;
             cursor: pointer;
             font-size: 18px;
+            transition: all 0.3s ease;
+            position: relative;
+            top: 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        #restart:active {
+            top: 2px;
+            box-shadow: 0 0 2px rgba(0,0,0,0.2);
         }
 
         #joystick {
@@ -100,13 +153,15 @@
         }
 
         #transitionVideo {
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
+            object-fit: cover;
             display: none;
             background-color: #000;
+            z-index: 1000;
         }
 
         #musicControls {
@@ -120,11 +175,21 @@
         .musicButton {
             margin: 5px;
             padding: 10px;
-            background-color: #fff;
+            background-color: rgba(255, 255, 255, 0.8);
             color: #000;
             border: none;
             cursor: pointer;
             border-radius: 5px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            position: relative;
+            top: 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .musicButton:active {
+            top: 2px;
+            box-shadow: 0 0 2px rgba(0,0,0,0.2);
         }
     </style>
 </head>
@@ -141,25 +206,31 @@
         <input type="text" id="registerUsername" placeholder="注册用户名">
         <input type="password" id="registerPassword" placeholder="注册密码">
         <button onclick="register()">注册</button>
-        <button onclick="showLoginForm()">返回登录</button>
+        <button id="backToLogin">返回登录</button>
+    </div>
+
+    <div id="difficultySelect" style="display:none;">
+        <button onclick="setDifficulty('easy')">简单</button>
+        <button onclick="setDifficulty('medium')">中等</button>
+        <button onclick="setDifficulty('hard')">困难</button>
     </div>
 
     <div id="gameContainer">
+        <button id="backToDifficulty">返回选择难度</button>
         <div id="score">分数: 0</div>
-        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <canvas id="gameCanvas"></canvas>
         <button id="restart" onclick="restartGame()">重新开始</button>
         <div id="joystick">
             <div id="joystickHandle"></div>
         </div>
+        <div id="leaderboard"></div>
     </div>
 
-    <!-- 添加视频元素 -->
-    <video id="transitionVideo" controls>
+    <video id="transitionVideo" preload="auto">
         <source src="0d7dba5daccac9749cdf6fac586402df.mp4" type="video/mp4">
         您的浏览器不支持HTML5视频。
     </video>
 
-    <!-- 音乐控制按钮 -->
     <div id="musicControls">
         <button class="musicButton" onclick="toggleMusic()">播放/暂停</button>
         <button class="musicButton" onclick="nextTrack()">下一曲</button>
@@ -173,18 +244,17 @@
         const transitionVideo = document.getElementById('transitionVideo');
         const joystick = document.getElementById('joystick');
         const joystickHandle = document.getElementById('joystickHandle');
-        const box = 20;
+        const leaderboardElement = document.getElementById('leaderboard');
+        let box;
         let snake = [];
-        snake[0] = { x: 10 * box, y: 10 * box };
         let direction;
-        let food = {
-            x: Math.floor(Math.random() * 38 + 1) * box,
-            y: Math.floor(Math.random() * 28 + 1) * box
-        };
+        let food;
+        let foodSize;
         let score = 0;
         let game;
+        let gameSpeed = 100; // 默认中等速度
+        let obstacles = [];
 
-        // 背景音乐
         const musicTracks = [
             '毛不易 - 无名的人.mp3',
             '王悦辰 - 精卫.mp3',
@@ -194,16 +264,24 @@
         const backgroundMusic = new Audio(musicTracks[currentTrackIndex]);
         backgroundMusic.loop = true;
 
-        // 加载图片
         const snakeHeadImg = new Image();
-        snakeHeadImg.src = '1000151242.jpg'; // 确保文件路径正确
+        snakeHeadImg.src = '1000151242.jpg';
 
         const foodImg = new Image();
-        foodImg.src = '1000152479.jpg'; // 确保文件路径正确
+        foodImg.src = '1000152479.jpg';
+
+        function resizeGame() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            box = Math.min(canvas.width, canvas.height) / 20;
+            snake = [{ x: 10 * box, y: 10 * box }];
+            generateFood();
+            generateObstacles();
+        }
+
+        window.addEventListener('resize', resizeGame);
 
         document.addEventListener('keydown', changeDirection);
-        restartButton.addEventListener('click', restartGame);
-
         joystick.addEventListener('touchstart', startDrag);
         joystick.addEventListener('touchmove', drag);
         joystick.addEventListener('touchend', endDrag);
@@ -232,8 +310,7 @@
                 showRegisterForm();
             } else if (username === storedUsername && password === storedPassword) {
                 document.getElementById('loginForm').style.display = 'none';
-                document.getElementById('gameContainer').style.display = 'flex';
-                startGame();
+                document.getElementById('difficultySelect').style.display = 'flex';
             } else {
                 alert('用户名或密码错误');
             }
@@ -247,6 +324,21 @@
         function showLoginForm() {
             document.getElementById('registerForm').style.display = 'none';
             document.getElementById('loginForm').style.display = 'flex';
+        }
+
+        function setDifficulty(level) {
+            if (level === 'easy') {
+                gameSpeed = 150;
+            } else if (level === 'medium') {
+                gameSpeed = 100;
+            } else if (level === 'hard') {
+                gameSpeed = 50;
+            }
+            document.getElementById('difficultySelect').style.display = 'none';
+            document.getElementById('gameContainer').style.display = 'flex';
+            document.getElementById('backToDifficulty').style.display = 'block';
+            resizeGame();
+            startGame();
         }
 
         function changeDirection(event) {
@@ -286,14 +378,15 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             for (let i = 0; i < snake.length; i++) {
                 if (i === 0) {
-                    ctx.drawImage(snakeHeadImg, snake[i].x, snake[i].y, box, box); // 绘制蛇头图像
+                    ctx.drawImage(snakeHeadImg, snake[i].x, snake[i].y, box, box);
                 } else {
                     ctx.fillStyle = 'green';
                     ctx.fillRect(snake[i].x, snake[i].y, box, box);
                 }
             }
 
-            ctx.drawImage(foodImg, food.x, food.y, box, box); // 绘制食物图像
+            ctx.drawImage(foodImg, food.x, food.y, foodSize, foodSize);
+            drawObstacles();
 
             let snakeX = snake[0].x;
             let snakeY = snake[0].y;
@@ -302,22 +395,27 @@
             if (direction === 'RIGHT') snakeX += box;
             if (direction === 'DOWN') snakeY += box;
 
-            if (snakeX === food.x && snakeY === food.y) {
+            if (snakeX < food.x + foodSize && snakeX + box > food.x &&
+                snakeY < food.y + foodSize && snakeY + box > food.y) {
                 score++;
                 scoreDisplay.innerHTML = '分数: ' + score;
-                food = {
-                    x: Math.floor(Math.random() * 38 + 1) * box,
-                    y: Math.floor(Math.random() * 28 + 1) * box
-                };
+                generateFood();
+
+                // 根据食物大小调整蛇的增长
+                let growthFactor = foodSize / box;
+                for (let i = 0; i < Math.floor(growthFactor); i++) {
+                    snake.push({});
+                }
             } else {
                 snake.pop();
             }
 
             let newHead = { x: snakeX, y: snakeY };
 
-            if (snakeX < 0 || snakeY < 0 || snakeX >= canvas.width || snakeY >= canvas.height || collision(newHead, snake)) {
+            if (snakeX < 0 || snakeY < 0 || snakeX >= canvas.width || snakeY >= canvas.height || collision(newHead, snake) || collision(newHead, obstacles)) {
                 clearInterval(game);
-                showTransitionVideo(); // 游戏结束时播放视频
+                showTransitionVideo();
+                updateLeaderboard();
             }
 
             snake.unshift(newHead);
@@ -330,31 +428,67 @@
             return false;
         }
 
+        function generateFood() {
+            foodSize = box + Math.random() * box;
+            food = {
+                x: Math.floor(Math.random() * (canvas.width / box)) * box,
+                y: Math.floor(Math.random() * (canvas.height / box)) * box
+            };
+        }
+
+        function generateObstacles() {
+            obstacles = [];
+            for (let i = 0; i < 5; i++) {
+                let obstacle = {
+                    x: Math.floor(Math.random() * (canvas.width / box)) * box,
+                    y: Math.floor(Math.random() * (canvas.height / box)) * box
+                };
+                obstacles.push(obstacle);
+            }
+        }
+
+        function drawObstacles() {
+            ctx.fillStyle = 'brown';
+            obstacles.forEach(obstacle => {
+                ctx.fillRect(obstacle.x, obstacle.y, box, box);
+            });
+        }
+
         function showTransitionVideo() {
             transitionVideo.style.display = 'block';
-            transitionVideo.play();
+            const playPromise = transitionVideo.play();
+            if (playPromise !== undefined) {
+                playPromise.then(_ => {
+                    console.log("视频开始播放");
+                }).catch(error => {
+                    console.log("视频播放被阻止:", error);
+                });
+            }
+
+            document.body.style.pointerEvents = 'none';
+            transitionVideo.style.pointerEvents = 'auto';
+
             transitionVideo.onended = function() {
                 transitionVideo.style.display = 'none';
                 restartButton.style.display = 'block';
+                document.body.style.pointerEvents = 'auto';
             };
         }
 
         function startGame() {
             backgroundMusic.play();
-            game = setInterval(draw, 100);
+            game = setInterval(draw, gameSpeed);
         }
 
         function restartGame() {
-            snake = [];
-            snake[0] = { x: 10 * box, y: 10 * box };
+            // 重置游戏状态
+            snake = [{ x: 10 * box, y: 10 * box }];
             direction = null;
             score = 0;
             scoreDisplay.innerHTML = '分数: 0';
-            food = {
-                x: Math.floor(Math.random() * 38 + 1) * box,
-                y: Math.floor(Math.random() * 28 + 1) * box
-            };
             restartButton.style.display = 'none';
+            generateFood();
+            generateObstacles();
             startGame();
         }
 
@@ -372,6 +506,34 @@
             backgroundMusic.src = musicTracks[currentTrackIndex];
             backgroundMusic.play();
         }
+
+        function updateLeaderboard() {
+            let leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
+            leaderboard.push({ username: localStorage.getItem('username'), score });
+            leaderboard.sort((a, b) => b.score - a.score);
+            leaderboard = leaderboard.slice(0, 10);
+            localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
+            displayLeaderboard(leaderboard);
+        }
+
+        function displayLeaderboard(leaderboard) {
+            leaderboardElement.innerHTML = '<h3>排行榜</h3>';
+            leaderboard.forEach((entry, index) => {
+                leaderboardElement.innerHTML += `<p>${index + 1}. ${entry.username}: ${entry.score}</p>`;
+            });
+        }
+
+        document.getElementById('backToDifficulty').addEventListener('click', function() {
+            clearInterval(game);
+            document.getElementById('gameContainer').style.display = 'none';
+            document.getElementById('difficultySelect').style.display = 'flex';
+            backgroundMusic.pause();
+        });
+
+        document.getElementById('backToLogin').addEventListener('click', function() {
+            document.getElementById('registerForm').style.display = 'none';
+            document.getElementById('loginForm').style.display = 'flex';
+        });
     </script>
 </body>
 
