@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>贪吃蛇游戏</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            flex-direction: column;
+            position: relative;
+        }
+
+        #loginForm {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        input {
+            margin: 10px 0;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            width: 200px;
+            text-align: center;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #fff;
+            color: #000;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        #gameContainer {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        canvas {
+            background-image: url('cb5b12ac657b5ba70fcda742b507c5861d30bce1625c650d184.webp');
+            background-size: cover;
+            display: block;
+            border: 1px solid #fff;
+        }
+
+        #score {
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+
+        #restart {
+            display: none;
+            padding: 10px 20px;
+            background-color: #fff;
+            color: #000;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        #joystick {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 100px;
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            touch-action: none;
+        }
+
+        #joystickHandle {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            width: 40px;
+            height: 40px;
+            background-color: #fff;
+            border-radius: 50%;
+        }
+
+        #transitionVideo {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            background-color: #000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="loginForm">
+        <input type="text" id="username" placeholder="用户名">
+        <input type="password" id="password" placeholder="密码">
+        <button onclick="login()">登录</button>
+        <button onclick="showRegisterForm()">注册</button>
+    </div>
+
+    <div id="registerForm" style="display:none;">
+        <input type="text" id="registerUsername" placeholder="注册用户名">
+        <input type="password" id="registerPassword" placeholder="注册密码">
+        <button onclick="register()">注册</button>
+        <button onclick="showLoginForm()">返回登录</button>
+    </div>
+
+    <div id="gameContainer">
+        <div id="score">分数: 0</div>
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <button id="restart" onclick="restartGame()">重新开始</button>
+        <div id="joystick">
+            <div id="joystickHandle"></div>
+        </div>
+        <audio id="backgroundMusic" loop>
+            <source src="毛不易 - 无名的人.mp3" type="audio/mp3"> 您的浏览器不支持音频元素。
+        </audio>
+    </div>
+
+    <!-- 添加视频元素 -->
+    <video id="transitionVideo" controls>
+        <source src="0d7dba5daccac9749cdf6fac586402df.mp4" type="video/mp4">
+        您的浏览器不支持HTML5视频。
+    </video>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('score');
+        const restartButton = document.getElementById('restart');
+        const backgroundMusic = document.getElementById('backgroundMusic');
+        const joystick = document.getElementById('joystick');
+        const joystickHandle = document.getElementById('joystickHandle');
+        const transitionVideo = document.getElementById('transitionVideo');
+        const box = 20;
+        let snake = [];
+        snake[0] = { x: 10 * box, y: 10 * box };
+        let direction;
+        let food = {
+            x: Math.floor(Math.random() * 38 + 1) * box,
+            y: Math.floor(Math.random() * 28 + 1) * box
+        };
+        let score = 0;
+        let game;
+        let isPaused = false;
+
+        // 加载图片
+        const snakeHeadImg = new Image();
+        snakeHeadImg.src = '1000151242.jpg'; // 确保文件路径正确
+
+        const foodImg = new Image();
+        foodImg.src = '1000152479.jpg'; // 确保文件路径正确
+
+        document.addEventListener('keydown', changeDirection);
+        restartButton.addEventListener('click', restartGame);
+
+        joystick.addEventListener('touchstart', startDrag);
+        joystick.addEventListener('touchmove', drag);
+        joystick.addEventListener('touchend', endDrag);
+
+        function register() {
+            const username = document.getElementById('registerUsername').value;
+            const password = document.getElementById('registerPassword').value;
+            if (username && password) {
+                localStorage.setItem('username', username);
+                localStorage.setItem('password', password);
+                alert('注册成功！请登录。');
+                showLoginForm();
+            } else {
+                alert('请输入用户名和密码进行注册。');
+            }
+        }
+
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const storedUsername = localStorage.getItem('username');
+            const storedPassword = localStorage.getItem('password');
+
+            if (!storedUsername || !storedPassword) {
+                alert('没有注册的账号，请注册。');
+                showRegisterForm();
+            } else if (username === storedUsername && password === storedPassword) {
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('gameContainer').style.display = 'flex';
+                startGame();
+            } else {
+                alert('用户名或密码错误');
+            }
+        }
+
+        function showRegisterForm() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('registerForm').style.display = 'flex';
+        }
+
+        function showLoginForm() {
+            document.getElementById('registerForm').style.display = 'none';
+            document.getElementById('loginForm').style.display = 'flex';
+        }
+
+        function changeDirection(event) {
+            if (event.keyCode === 37 && direction !== 'RIGHT') direction = 'LEFT';
+            else if (event.keyCode === 38 && direction !== 'DOWN') direction = 'UP';
+            else if (event.keyCode === 39 && direction !== 'LEFT') direction = 'RIGHT';
+            else if (event.keyCode === 40 && direction !== 'UP') direction = 'DOWN';
+        }
+
+        function startDrag(event) {
+            event.preventDefault();
+        }
+
+        function drag(event) {
+            const touch = event.touches[0];
+            const rect = joystick.getBoundingClientRect();
+            const x = touch.clientX - rect.left - rect.width / 2;
+            const y = touch.clientY - rect.top - rect.height / 2;
+            const angle = Math.atan2(y, x);
+            const distance = Math.min(40, Math.hypot(x, y));
+            joystickHandle.style.transform = `translate(${distance * Math.cos(angle) + 30}px, ${distance * Math.sin(angle) + 30}px)`;
+
+            if (Math.abs(x) > Math.abs(y)) {
+                if (x > 0 && direction !== 'LEFT') direction = 'RIGHT';
+                else if (x < 0 && direction !== 'RIGHT') direction = 'LEFT';
+            } else {
+                if (y > 0 && direction !== 'UP') direction = 'DOWN';
+                else if (y < 0 && direction !== 'DOWN') direction = 'UP';
+            }
+        }
+
+        function endDrag() {
+            joystickHandle.style.transform = 'translate(30px, 30px)';
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let i = 0; i < snake.length; i++) {
+                if (i === 0) {
+                    ctx.drawImage(snakeHeadImg, snake[i].x, snake[i].y, box, box); // 绘制蛇头图像
+                } else {
+                    ctx.fillStyle = 'green';
+                    ctx.fillRect(snake[i].x, snake[i].y, box, box);
+                }
+            }
+
+            ctx.drawImage(foodImg, food.x, food.y, box, box); // 绘制食物图像
+
+            let snakeX = snake[0].x;
+            let snakeY = snake[0].y;
+            if (direction === 'LEFT') snakeX -= box;
+            if (direction === 'UP') snakeY -= box;
+            if (direction === 'RIGHT') snakeX += box;
+            if (direction === 'DOWN') snakeY += box;
+
+            if (snakeX === food.x && snakeY === food.y) {
+                score++;
+                scoreDisplay.innerHTML = '分数: ' + score;
+                food = {
+                    x: Math.floor(Math.random() * 38 + 1) * box,
+                    y: Math.floor(Math.random() * 28 + 1) * box
+                };
+            } else {
+                snake.pop();
+            }
+
+            let newHead = { x: snakeX, y: snakeY };
+
+            if (snakeX < 0 || snakeY < 0 || snakeX >= canvas.width || snakeY >= canvas.height || collision(newHead, snake)) {
+                clearInterval(game);
+                showTransitionVideo(); // 游戏结束时播放视频
+            }
+
+            snake.unshift(newHead);
+        }
+
+        function collision(head, array) {
+            for (let i = 0; i < array.length; i++) {
+                if (head.x === array[i].x && head.y === array[i].y) return true;
+            }
+            return false;
+        }
+
+        function showTransitionVideo() {
+            transitionVideo.style.display = 'block';
+            transitionVideo.play();
+            transitionVideo.onended = function() {
+                transitionVideo.style.display = 'none';
+                restartButton.style.display = 'block';
+            };
+        }
+
+        function startGame() {
+            backgroundMusic.volume = 1.0;
+            backgroundMusic.play();
+            game = setInterval(draw, 100);
+        }
+
+        function restartGame() {
+            snake = [];
+            snake[0] = { x: 10 * box, y: 10 * box };
+            direction = null;
+            score = 0;
+            scoreDisplay.innerHTML = '分数: 0';
+            food = {
+                x: Math.floor(Math.random() * 38 + 1) * box,
+                y: Math.floor(Math.random() * 28 + 1) * box
+            };
+            restartButton.style.display = 'none';
+            startGame();
+        }
+    </script>
+</body>
+
+</html>
